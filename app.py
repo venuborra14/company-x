@@ -1,7 +1,7 @@
 """
 app.py
 ======
-Company X -- Automated Liquidity Router (interactive prototype).
+OWG -- Automated Liquidity Router (interactive prototype).
 
 Run with:
     streamlit run app.py
@@ -44,8 +44,8 @@ from engine import (
 # Page configuration
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Company X · Liquidity Router",
-    page_icon="🛳️",
+    page_title="OWG · Liquidity Router",
+    page_icon=":material/account_balance:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -77,14 +77,14 @@ state = get_state()
 # Disclaimer banner
 # ---------------------------------------------------------------------------
 st.warning(
-    "⚠️ **PROTOTYPE — NOT FOR PRODUCTION USE.** This is an initial technical "
+    "**PROTOTYPE — NOT FOR PRODUCTION USE.** This is an initial technical "
     "outline. All customs, carrier, credit-bureau and tokenized-treasury "
     "integrations are **mocked/simulated**. The system, its risk logic, and "
     "all figures shown are subject to further technical, regulatory, and legal "
     "modification. Nothing here constitutes financial, legal, or investment advice."
 )
 
-st.title("🛳️ Company X — Automated Trade-Finance Liquidity Router")
+st.title("OWG — Automated Trade-Finance Liquidity Router")
 st.caption(
     "Bridging the SME trade-finance gap: high-yield export invoices routed to a "
     "private credit pool managed by **V.capitale**."
@@ -95,7 +95,7 @@ st.caption(
 # Sidebar — V.capitale controls (risk caps + veto gate + treasury sweep)
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.header("🏦 V.capitale Control Panel")
+    st.header("V.capitale Control Panel")
 
     st.subheader("Risk Thresholds")
     st.caption("Concentration caps as a % of the committed pool.")
@@ -112,7 +112,7 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("🛑 Manual Veto Gate")
+    st.subheader("Manual Veto Gate")
     st.caption("V.capitale holds absolute Go/No-Go power on liquidity release.")
     st.session_state.veto_armed = st.toggle(
         "Arm veto (block next funding)",
@@ -127,12 +127,12 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader("💸 Treasury Sweep")
+    st.subheader("Treasury Sweep")
     t = state.treasury
     st.caption("Idle Tier-1 capital earns the tokenized T-bill baseline.")
     st.metric("Idle (Tier 1)", f"${t.tier1_idle:,.0f}")
     st.metric("Deployed (Tier 2)", f"${t.tier2_deployed:,.0f}")
-    if st.button("⏩ Advance 1 day (accrue sweep yield)", use_container_width=True):
+    if st.button("Advance 1 day (accrue sweep yield)", use_container_width=True):
         interest = t.accrued_treasury_interest(days=1.0)
         t.tier1_idle += interest
         st.session_state.treasury_interest += interest
@@ -145,7 +145,7 @@ with st.sidebar:
               help=f"Cumulative over {st.session_state.day_counter} simulated day(s).")
 
     st.divider()
-    if st.button("🔄 Reset entire simulation", use_container_width=True):
+    if st.button("Reset entire simulation", use_container_width=True):
         for k in ("platform", "veto_armed", "day_counter",
                   "treasury_interest", "guide_stage"):
             st.session_state.pop(k, None)
@@ -193,16 +193,16 @@ with tab_uw:
         tenor_days = st.select_slider("Tenor (days)", options=[30, 45, 60, 90], value=30)
         invoice_uploaded = st.checkbox("Digital invoice uploaded", value=True)
 
-        run = st.button("🔍 Run Triple-Match Underwriting", type="primary",
+        run = st.button("Run Triple-Match Underwriting", type="primary",
                         use_container_width=True)
 
     with col_hint:
         st.info(
             "**Try these:**\n\n"
-            "✅ `MAEU1234567` + MAERSK → all pass\n\n"
-            "❌ Carrier `UNKNOWN` → logistics fails\n\n"
-            "❌ A container ID hashing to '7' → customs hold\n\n"
-            "❌ Uncheck invoice → invoice silo fails"
+            "PASS: `MAEU1234567` + MAERSK → all pass\n\n"
+            "FAIL: Carrier `UNKNOWN` → logistics fails\n\n"
+            "FAIL: A container ID hashing to '7' → customs hold\n\n"
+            "FAIL: Uncheck invoice → invoice silo fails"
         )
 
     if run:
@@ -236,9 +236,9 @@ with tab_uw:
         st.divider()
 
         if uw.triple_matched:
-            st.success(f"🎉 **{DealState.APPROVED.value}** — eligible for JIT funding.")
+            st.success(f"**{DealState.APPROVED.value}** — eligible for JIT funding.")
         else:
-            st.error(f"⛔ **{DealState.REJECTED.value}** — one or more silos failed. No capital will release.")
+            st.error(f"**{DealState.REJECTED.value}** — one or more silos failed. No capital will release.")
 
         # Pricing + risk summary.
         m1, m2, m3, m4 = st.columns(4)
@@ -250,26 +250,25 @@ with tab_uw:
         m4.metric("Buyer credit", f"{uw.buyer_rating}",
                   help=f"PD {uw.buyer_pd_bps} bps · {uw.buyer_country} · {uw.buyer_sector}")
 
-        st.info(f"🧭 **Risk anchoring:** {uw.risk_note}")
+        st.info(f"**Risk anchoring:** {uw.risk_note}")
 
         # Funding action — gated by triple-match AND V.capitale veto.
         if uw.triple_matched:
             already_funded = any(d.deal_id == uw.deal_id for d in state.treasury.funded_deals)
             if already_funded:
-                st.success("✅ This deal has already been funded (see Treasury Router / Capital Portal).")
+                st.success("This deal has already been funded (see Treasury Router / Capital Portal).")
             elif st.session_state.veto_armed:
-                st.warning("🛑 V.capitale veto is ARMED — funding blocked. Disarm in the sidebar to release.")
-            elif st.button("💵 Trigger JIT Advance (Tier 1 → Exporter)", type="primary"):
+                st.warning("V.capitale veto is ARMED — funding blocked. Disarm in the sidebar to release.")
+            elif st.button("Trigger JIT Advance (Tier 1 \u2192 Exporter)", type="primary"):
                 deal = state.treasury.fund_deal(uw)
                 if deal is None:
                     st.error("Funding failed — insufficient idle liquidity. See console log.")
                 else:
                     st.session_state.guide_stage = "funded"
                     st.success(
-                        f"💸 JIT advance of **${deal.advance_amount:,.2f}** wired to exporter. "
+                        f"JIT advance of **${deal.advance_amount:,.2f}** wired to exporter. "
                         f"Expected settlement: {deal.expected_settlement():%Y-%m-%d}."
                     )
-                    st.balloons()
 
 
 # ===========================================================================
@@ -304,7 +303,7 @@ with tab_treasury:
     st.divider()
 
     # Floor billing / non-utilization fee.
-    st.subheader("📉 Floor Billing — Non-Utilization Fee")
+    st.subheader("Floor Billing — Non-Utilization Fee")
     nuf = t.non_utilization_fee()
     fc1, fc2, fc3 = st.columns(3)
     fc1.metric("Monthly volume target", f"${nuf['target']:,.0f}")
@@ -312,11 +311,11 @@ with tab_treasury:
     fc3.metric("Shortfall", f"${nuf['shortfall']:,.0f}")
     if nuf["triggered"]:
         st.warning(
-            f"⚠️ Volume below target — non-utilization fee of **${nuf['fee']:,.2f}** "
+            f"Volume below target — non-utilization fee of **${nuf['fee']:,.2f}** "
             f"charged to the client to preserve V.capitale's minimum yield floor."
         )
     else:
-        st.success("✅ Volume target met — no non-utilization fee due this period.")
+        st.success("Volume target met — no non-utilization fee due this period.")
 
     st.divider()
 
@@ -353,7 +352,7 @@ with tab_treasury:
         live_ids = [d.deal_id for d in t.funded_deals if not d.settled]
         if live_ids:
             settle_id = st.selectbox("Settle a deal (buyer remits on maturity)", live_ids)
-            if st.button("✅ Mark settled (principal returns to Tier 1)"):
+            if st.button("Mark settled (principal returns to Tier 1)"):
                 if t.settle_deal(settle_id):
                     st.success(f"Deal {settle_id} settled. Principal swept back into the idle vault.")
                     st.rerun()
@@ -422,9 +421,9 @@ with tab_portal:
 
     if breaches:
         for b in breaches:
-            st.error(f"🚨 {b}")
+            st.error(f"{b}")
     elif any_data:
-        st.success("✅ All concentration exposures within configured caps.")
+        st.success("All concentration exposures within configured caps.")
 
     st.divider()
 
@@ -458,12 +457,12 @@ with tab_guide:
 
     persona = st.radio(
         "Choose a stakeholder view",
-        ["🧑‍💻 Tech / Developer", "🏦 V.capitale (Fund Manager)", "📦 SME Exporter"],
+        ["Tech / Developer", "V.capitale (Fund Manager)", "SME Exporter"],
         horizontal=True,
     )
 
     # ---- Tech / Developer path ------------------------------------------
-    if persona.startswith("🧑‍💻"):
+    if persona.startswith("Tech"):
         st.markdown("##### Developer Path — live console & payloads")
         st.write(
             "Below is the structured event log emitted by the engines as they "
@@ -492,7 +491,7 @@ with tab_guide:
             )
 
     # ---- V.capitale path -------------------------------------------------
-    elif persona.startswith("🏦"):
+    elif persona.startswith("V.capitale"):
         st.markdown("##### V.capitale Path — risk control & JIT oversight")
         steps = [
             ("Set risk thresholds",
@@ -500,7 +499,7 @@ with tab_guide:
              "caps. The Capital Portal flags any live exposure that breaches them."),
             ("Monitor the treasury sweep",
              "Idle Tier-1 capital sits in the tokenized T-bill vault at "
-             f"{TREASURY_BASELINE_YIELD:.1%}. Use '⏩ Advance 1 day' to accrue sweep "
+             f"{TREASURY_BASELINE_YIELD:.1%}. Use 'Advance 1 day' to accrue sweep "
              "yield and watch idle cash grow."),
             ("Exercise the veto gate",
              "Arm the veto toggle in the sidebar to block the next JIT release even "
@@ -510,10 +509,11 @@ with tab_guide:
              "and wired to the exporter in one transaction; 20% cushion is retained."),
         ]
         for i, (title, body) in enumerate(steps):
-            done = "✅" if (i == 0 or stage_rank >= 1) else "⬜"
+            complete = (i == 0 or stage_rank >= 1)
             if i == 3:
-                done = "✅" if stage_rank >= 2 else "⬜"
-            st.markdown(f"{done} **{i+1}. {title}** — {body}")
+                complete = stage_rank >= 2
+            marker = "**[Done]**" if complete else "[Pending]"
+            st.markdown(f"{marker} **{i+1}. {title}** — {body}")
 
         st.divider()
         st.markdown("**Current control state:**")
@@ -543,8 +543,8 @@ with tab_guide:
              "premium fee) is released and the principal recycles to Tier 1.", 2),
         ]
         for i, (title, body, need) in enumerate(lifecycle):
-            done = "✅" if stage_rank >= need else "⬜"
-            st.markdown(f"{done} **{i+1}. {title}** — {body}")
+            marker = "**[Done]**" if stage_rank >= need else "[Pending]"
+            st.markdown(f"{marker} **{i+1}. {title}** — {body}")
 
         st.divider()
         if state.last_underwriting and state.last_underwriting.triple_matched:
@@ -563,6 +563,6 @@ with tab_guide:
 # ---------------------------------------------------------------------------
 st.divider()
 st.caption(
-    "Company X prototype · Triple-Match underwriting · Two-tier JIT treasury · "
+    "OWG prototype · Triple-Match underwriting · Two-tier JIT treasury · "
     "Capital portal analytics. All integrations mocked. Figures illustrative only."
 )

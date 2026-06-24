@@ -1,7 +1,7 @@
 """
 engine.py
 =========
-Core domain logic for the Company X liquidity-routing prototype.
+Core domain logic for the OWG liquidity-routing prototype.
 
 This module is intentionally framework-agnostic (no Streamlit imports) so the
 business logic can be unit-tested, reused by an API layer, or swapped behind a
